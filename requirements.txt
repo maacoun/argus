@@ -1,0 +1,11 @@
+# Network Traffic Watchdog — závislosti
+# Instalace: pip install -r requirements.txt
+#
+# Poznámka: pywin32 musí být nainstalován pro správné fungování systémového
+# traye na Windows. Na většině systémů je již přítomen.
+
+psutil>=5.9.0        # síťová spojení, informace o procesech
+pywin32>=300         # systémový tray, Win32 API (win32gui, win32api, win32con)
+Pillow>=10.0.0       # tvorba ikon
+requests>=2.31.0     # HTTP (volitelné pro budoucí threat intel)
+colorama>=0.4.6      # barevný výstup v konzoli
