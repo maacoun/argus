@@ -4,6 +4,7 @@ Network Traffic Watchdog — Detection engine
 Runs a set of heuristic rules against every batch of observed connections
 and returns a list of Alert objects.
 """
+import ipaddress
 import math
 import time
 import logging
@@ -16,6 +17,15 @@ from i18n import t
 from geoip import flag_emoji
 
 logger = logging.getLogger("watchdog.detector")
+
+
+def _is_local_ip(ip: str) -> bool:
+    """Return True for loopback, private (RFC1918), link-local, and other
+    non-routable addresses that should never reach a C2 server."""
+    try:
+        return ipaddress.ip_address(ip).is_private
+    except ValueError:
+        return True  # unparseable → skip
 
 
 @dataclass
@@ -36,9 +46,6 @@ class Alert:
         """Unique key used for cooldown deduplication."""
         return (self.alert_type, self.process_name, self.remote_addr, self.remote_port)
 
-
-# IPs that are always safe to ignore in every check
-_LOOPBACK_IPS = {"127.0.0.1", "::1", "0.0.0.0", "::"}
 
 
 class DetectionEngine:
@@ -68,7 +75,7 @@ class DetectionEngine:
 
         for conn in connections:
             remote = conn.get("remote_addr", "")
-            if not remote or remote in _LOOPBACK_IPS:
+            if not remote or _is_local_ip(remote):
                 continue
 
             key = (
