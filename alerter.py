@@ -26,6 +26,20 @@ _ICONS = {
     config.SEVERITY_LOW:      "ℹ️",
 }
 
+# Alert types that produce a tray balloon notification.
+# Everything else is still logged to DB and visible in the Alerts UI — just silently.
+# Rationale: warning_process (cmd/powershell), suspicious_port, and high_risk_country
+# fire far too often on normal Windows systems and cause alert fatigue.
+_NOTIFY_ALERT_TYPES: frozenset = frozenset({
+    "malware_port",        # CRITICAL — known RAT/backdoor port
+    "critical_process",    # CRITICAL — LOLBin with network connection
+    "suspicious_exe_path", # HIGH     — executable in Temp/Downloads/Desktop
+    "beaconing",           # HIGH     — regular C2 heartbeat pattern
+    "mining_pool",         # HIGH     — cryptojacking
+    "tor_connection",      # HIGH     — Tor usage
+    "connection_flood",    # HIGH     — port scan / flood
+})
+
 
 class Alerter:
     """Manages alert delivery and cooldown tracking."""
@@ -78,6 +92,9 @@ class Alerter:
     # ── Notification dispatch ─────────────────────────────────────────────────
 
     def _notify(self, alert: Alert):
+        if alert.alert_type not in _NOTIFY_ALERT_TYPES:
+            return
+
         icon  = _ICONS.get(alert.severity, "")
         title = f"{icon} Network Watchdog — {alert.title}"
         body  = alert.description

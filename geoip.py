@@ -95,11 +95,21 @@ class GeoIPCache:
             return self._cache.get(ip)
 
     def get_country_display(self, ip: str) -> str:
-        """Return a human-readable label like '🇷🇺 Russia' or '' if unknown."""
+        """Return a human-readable label like 'RU  Russia' or '' if unknown.
+
+        Flag emoji (🇷🇺) are intentionally omitted here because Windows GDI /
+        tkinter does not render Regional Indicator symbol pairs as flag glyphs —
+        they appear as bare letters (AT, RU…). Flag emoji are still used in the
+        HTML report where the browser handles rendering correctly.
+        """
         geo = self.get(ip)
         if not geo:
             return ""
-        return f"{geo['flag']} {geo['country']}" if geo.get("flag") else geo.get("country", "")
+        cc      = geo.get("country_code", "")
+        country = geo.get("country", "")
+        if cc and country:
+            return f"{cc}  {country}"
+        return country or cc
 
     def is_high_risk(self, ip: str) -> bool:
         geo = self.get(ip)

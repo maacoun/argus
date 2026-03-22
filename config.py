@@ -53,25 +53,15 @@ CRITICAL_PORTS: dict[int, str] = {
 }
 
 # ── Unusual / suspicious ports (WARNING) ────────────────────────────────────
+# Ports already covered by a dedicated check (Tor, mining) are intentionally
+# excluded here to avoid duplicate alerts — use TOR_PORTS / MINING_PORTS instead.
+# Common developer ports (8080, 8888, 5000) are also excluded to reduce noise.
 WARNING_PORTS: dict[int, str] = {
     1080: "SOCKS proxy",
     3128: "Squid proxy",
-    8080: "Alternate HTTP / proxy",
-    8888: "Alternate HTTP",
-    3333: "Possible mining / Metasploit",
-    3334: "Mining pool",
-    5555: "Android ADB / mining",
     4433: "HTTPS alternate",
     8443: "HTTPS alternate",
-    9001: "Tor relay",
-    9030: "Tor directory",
-    9050: "Tor SOCKS proxy",
-    9051: "Tor control port",
-    9150: "Tor Browser proxy",
-    14444: "Mining pool (XMR)",
-    14433: "Mining pool (XMR TLS)",
-    5900:  "VNC (unencrypted)",
-    5000:  "UPnP / often abused",
+    5900: "VNC (unencrypted)",
 }
 
 TOR_PORTS    = {9001, 9030, 9050, 9051, 9150}

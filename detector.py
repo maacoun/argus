@@ -81,7 +81,7 @@ class DetectionEngine:
 
             # Per-connection rules
             alerts += self._check_port(conn)
-            alerts += self._check_process(conn)
+            alerts += self._check_process(conn, is_new)
             alerts += self._check_exe_path(conn)
             alerts += self._check_tor(conn)
 
@@ -143,9 +143,11 @@ class DetectionEngine:
 
         return []
 
-    def _check_process(self, conn: dict) -> list[Alert]:
+    def _check_process(self, conn: dict, is_new: bool) -> list[Alert]:
         proc = (conn.get("process_name") or "").lower()
 
+        # CRITICAL processes: alert on every scan — if a LOLBin has a persistent
+        # outbound connection we want it to remain visible even after restart.
         if proc in config.CRITICAL_PROCESSES:
             return [Alert(
                 alert_type="critical_process",
@@ -162,7 +164,10 @@ class DetectionEngine:
                 remote_port=conn["remote_port"],
             )]
 
-        if proc in config.WARNING_PROCESSES:
+        # WARNING processes: only on first appearance of the connection.
+        # cmd.exe / powershell.exe maintain persistent connections for Windows Update,
+        # scripts, etc. — re-alerting every 5 s would flood the DB and alert log.
+        if is_new and proc in config.WARNING_PROCESSES:
             return [Alert(
                 alert_type="warning_process",
                 severity=config.SEVERITY_HIGH,

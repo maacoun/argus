@@ -188,7 +188,7 @@ MONITOR_INTERVAL = 5      # Seconds between scans
 ALERT_COOLDOWN   = 300    # Seconds before re-alerting on the same issue
 
 CRITICAL_PORTS   = { 4444: "Metasploit", 31337: "Back Orifice", ... }
-WARNING_PORTS    = { 1080: "SOCKS proxy", 9050: "Tor", ... }
+WARNING_PORTS    = { 1080: "SOCKS proxy", 8443: "HTTPS alternate", ... }
 
 CRITICAL_PROCESSES = { "mshta.exe": "...", "certutil.exe": "...", ... }
 WARNING_PROCESSES  = { "powershell.exe": "...", "cmd.exe": "...", ... }
@@ -201,6 +201,41 @@ MAX_UNIQUE_REMOTE_IPS        = 30   # Per-process, per-60s flood threshold
 ```
 
 To add your own rules, edit the relevant dictionary and restart the watchdog.
+
+### Language
+
+The UI language is set in `config.py`:
+
+```python
+LANGUAGE = "cs"   # Czech
+# LANGUAGE = "en" # English
+```
+
+Available languages: Czech (`cs`), English (`en`). To add a new language, copy
+`strings/en.py` to `strings/<code>.py`, translate the strings, and set
+`LANGUAGE = "<code>"`. Restart the watchdog to apply the change.
+
+### Notification thresholds
+
+Not every detected issue triggers a tray balloon — that would cause alert fatigue
+on a normal Windows system (e.g. PowerShell running Windows Update scripts).
+The notification policy is:
+
+| Alert type | Tray balloon | Alerts UI | Log file |
+|---|---|---|---|
+| Known malware port | ✅ | ✅ | ✅ |
+| Critical LOLBin process | ✅ | ✅ | ✅ |
+| Suspicious exe path | ✅ | ✅ | ✅ |
+| Beaconing / C2 | ✅ | ✅ | ✅ |
+| Cryptocurrency mining | ✅ | ✅ | ✅ |
+| Tor connection | ✅ | ✅ | ✅ |
+| Connection flood | ✅ | ✅ | ✅ |
+| Warning process (cmd, powershell…) | ❌ | ✅ | ✅ |
+| Unusual port | ❌ | ✅ | ✅ |
+| High-risk country | ❌ | ✅ | ✅ |
+
+To promote any silent alert type to a balloon, add its `alert_type` string to
+`_NOTIFY_ALERT_TYPES` in [`alerter.py`](alerter.py).
 
 ---
 
