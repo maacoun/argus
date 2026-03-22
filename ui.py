@@ -366,12 +366,12 @@ class AlertsWindow:
         top = _frame(parent)
         top.pack(fill="x", padx=16, pady=(14, 6))
 
-        self._stat_card(top, t("ui.dash.stat_total"),
-                        stats["total_alerts_24h"], FG)
-        self._stat_card(top, t("ui.dash.stat_critical"),
-                        stats["critical_alerts_24h"], RED)
-        self._stat_card(top, t("ui.dash.stat_countries"),
-                        stats.get("flagged_countries", 0), PURPLE)
+        self._dash_total    = self._stat_card(top, t("ui.dash.stat_total"),
+                                              stats["total_alerts_24h"], FG)
+        self._dash_critical = self._stat_card(top, t("ui.dash.stat_critical"),
+                                              stats["critical_alerts_24h"], RED)
+        self._dash_countries= self._stat_card(top, t("ui.dash.stat_countries"),
+                                              stats.get("flagged_countries", 0), PURPLE)
 
         # ── Alert timeline chart ──────────────────────────────────────────────
         chart_card = _card(parent)
@@ -382,13 +382,13 @@ class AlertsWindow:
         _label(hdr, t("ui.dash.chart_title"),
                font=("Segoe UI", 9, "bold"), fg=FG_DIM, bg=CARD).pack(side="left")
 
-        chart = tk.Canvas(chart_card, bg=CARD, height=110,
-                          highlightthickness=0)
-        chart.pack(fill="x", padx=14, pady=(0, 10))
+        self._dash_chart = tk.Canvas(chart_card, bg=CARD, height=110,
+                                     highlightthickness=0)
+        self._dash_chart.pack(fill="x", padx=14, pady=(0, 10))
 
-        hourly = self._db.get_hourly_alert_counts(hours=12)
-        chart.after(100, lambda: _draw_bar_chart(chart, hourly))
-        chart.bind("<Configure>", lambda _e: _draw_bar_chart(chart, hourly))
+        self._dash_hourly = list(self._db.get_hourly_alert_counts(hours=12))
+        self._dash_chart.after(100, lambda: _draw_bar_chart(self._dash_chart, self._dash_hourly))
+        self._dash_chart.bind("<Configure>", lambda _e: _draw_bar_chart(self._dash_chart, self._dash_hourly))
 
         # ── Bottom row: Top processes + Top destinations ──────────────────────
         bottom = _frame(parent)
@@ -402,12 +402,12 @@ class AlertsWindow:
                font=("Segoe UI", 9, "bold"), fg=FG_DIM, bg=CARD,
                padx=14, pady=10).pack(anchor="w")
 
-        proc_data = [(r["process_name"] or t("ui.dash.unknown"), r["cnt"])
-                     for r in stats["top_processes"]]
-        pc = tk.Canvas(left_card, bg=CARD, height=130, highlightthickness=0)
-        pc.pack(fill="x", padx=14, pady=(0, 14))
-        pc.after(120, lambda: _draw_h_bars(pc, proc_data, ACCENT))
-        pc.bind("<Configure>", lambda _e: _draw_h_bars(pc, proc_data, ACCENT))
+        self._dash_proc_data = [(r["process_name"] or t("ui.dash.unknown"), r["cnt"])
+                                for r in stats["top_processes"]]
+        self._dash_pc = tk.Canvas(left_card, bg=CARD, height=130, highlightthickness=0)
+        self._dash_pc.pack(fill="x", padx=14, pady=(0, 14))
+        self._dash_pc.after(120, lambda: _draw_h_bars(self._dash_pc, self._dash_proc_data, ACCENT))
+        self._dash_pc.bind("<Configure>", lambda _e: _draw_h_bars(self._dash_pc, self._dash_proc_data, ACCENT))
 
         # Right: countries + IPs
         right_card = _card(bottom)
@@ -417,29 +417,45 @@ class AlertsWindow:
                font=("Segoe UI", 9, "bold"), fg=FG_DIM, bg=CARD,
                padx=14, pady=10).pack(anchor="w")
 
-        # Show countries if available, else IPs
+        self._dash_dest_data = self._build_dest_data(stats)
+        self._dash_dc = tk.Canvas(right_card, bg=CARD, height=130, highlightthickness=0)
+        self._dash_dc.pack(fill="x", padx=14, pady=(0, 14))
+        self._dash_dc.after(140, lambda: _draw_h_bars(self._dash_dc, self._dash_dest_data, PURPLE))
+        self._dash_dc.bind("<Configure>", lambda _e: _draw_h_bars(self._dash_dc, self._dash_dest_data, PURPLE))
+
+    def _build_dest_data(self, stats: dict) -> list:
         country_rows = stats.get("top_countries", [])
         if country_rows:
-            dest_data = [
-                (f"{flag_emoji(r['country_code'])} {r['country'] or r['country_code']}",
-                 r["cnt"])
-                for r in country_rows
-            ]
-        else:
-            dest_data = [(r["remote_addr"] or "?", r["cnt"])
-                         for r in stats["top_ips"]]
+            return [(f"{flag_emoji(r['country_code'])} {r['country'] or r['country_code']}",
+                     r["cnt"]) for r in country_rows]
+        return [(r["remote_addr"] or "?", r["cnt"]) for r in stats["top_ips"]]
 
-        dc = tk.Canvas(right_card, bg=CARD, height=130, highlightthickness=0)
-        dc.pack(fill="x", padx=14, pady=(0, 14))
-        dc.after(140, lambda: _draw_h_bars(dc, dest_data, PURPLE))
-        dc.bind("<Configure>", lambda _e: _draw_h_bars(dc, dest_data, PURPLE))
+    def _refresh_dashboard(self):
+        """Update all Dashboard widgets in-place from the current DB state."""
+        stats = self._db.get_stats()
 
-    def _stat_card(self, parent, label, value, color):
+        self._dash_total.set(str(stats["total_alerts_24h"]))
+        self._dash_critical.set(str(stats["critical_alerts_24h"]))
+        self._dash_countries.set(str(stats.get("flagged_countries", 0)))
+
+        self._dash_hourly[:] = self._db.get_hourly_alert_counts(hours=12)
+        _draw_bar_chart(self._dash_chart, self._dash_hourly)
+
+        self._dash_proc_data[:] = [(r["process_name"] or t("ui.dash.unknown"), r["cnt"])
+                                   for r in stats["top_processes"]]
+        _draw_h_bars(self._dash_pc, self._dash_proc_data, ACCENT)
+
+        self._dash_dest_data[:] = self._build_dest_data(stats)
+        _draw_h_bars(self._dash_dc, self._dash_dest_data, PURPLE)
+
+    def _stat_card(self, parent, label, value, color) -> tk.StringVar:
+        var = tk.StringVar(value=str(value))
         card = _card(parent, padx=20, pady=16)
         card.pack(side="left", fill="both", expand=True, padx=(0, 8))
         _label(card, label, font=("Segoe UI", 9), fg=FG_DIM, bg=CARD).pack(anchor="w")
-        _label(card, str(value), font=("Segoe UI", 38, "bold"),
-               fg=color, bg=CARD).pack(anchor="w")
+        tk.Label(card, textvariable=var, font=("Segoe UI", 38, "bold"),
+                 fg=color, bg=CARD).pack(anchor="w")
+        return var
 
     # ── Tab 2: Alerts ─────────────────────────────────────────────────────────
 
@@ -465,6 +481,15 @@ class AlertsWindow:
             lbl.bind("<Button-1>", lambda _e, s=sev: self._set_sev_filter(s))
             self._pills[sev] = lbl
         self._set_sev_filter("ALL", redraw=False)
+
+        # Clear logs button (right side of pill row)
+        clr = tk.Label(pill_row, text=t("ui.alerts.btn_clear"),
+                       font=("Segoe UI", 9), fg=FG_MUTE, bg=CARD2,
+                       padx=12, pady=8, cursor="hand2")
+        clr.pack(side="right")
+        clr.bind("<Enter>", lambda _e: clr.config(fg=RED))
+        clr.bind("<Leave>", lambda _e: clr.config(fg=FG_MUTE))
+        clr.bind("<Button-1>", lambda _e: self._on_clear_logs())
 
         # Auto-refresh label
         self._refresh_ts_var = tk.StringVar(value="")
@@ -575,6 +600,15 @@ class AlertsWindow:
         self._refresh_ts_var.set(
             t("ui.alerts.updated_at", time=datetime.now().strftime("%H:%M:%S"))
         )
+
+    def _on_clear_logs(self):
+        import tkinter.messagebox as mb
+        if mb.askyesno(t("tray.clear_logs_title"), t("tray.clear_logs_confirm"),
+                       icon="warning", default="no"):
+            self._db.clear_all_data()
+            self._all_alerts = []
+            self._populate_alerts()
+            self._refresh_dashboard()
 
     def _refresh_alerts(self):
         self._all_alerts = self._db.get_recent_alerts(hours=24)

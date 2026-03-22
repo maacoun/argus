@@ -35,8 +35,9 @@ REFRESH_SECS  = 10
 ID_STATUS       = 900   # read-only label
 ID_VIEW_ALERTS  = 1001
 ID_VIEW_REPORT  = 1002
-ID_TOGGLE_PAUSE = 1003
-ID_QUIT         = 1004
+ID_CLEAR_LOGS   = 1003
+ID_TOGGLE_PAUSE = 1004
+ID_QUIT         = 1005
 
 
 # ── PIL → HICON ───────────────────────────────────────────────────────────────
@@ -191,6 +192,7 @@ class SystemTray:
                 cmd = win32api.LOWORD(wparam)
                 if   cmd == ID_VIEW_ALERTS:  threading.Thread(target=self._on_view_alerts,  daemon=True).start()
                 elif cmd == ID_VIEW_REPORT:  threading.Thread(target=self._on_view_report,  daemon=True).start()
+                elif cmd == ID_CLEAR_LOGS:   threading.Thread(target=self._on_clear_logs,   daemon=True).start()
                 elif cmd == ID_TOGGLE_PAUSE: self._on_toggle_pause()
                 elif cmd == ID_QUIT:         self._on_quit(hwnd)
 
@@ -299,6 +301,7 @@ class SystemTray:
         win32gui.AppendMenu(menu, win32con.MF_SEPARATOR, 0, "")
         win32gui.AppendMenu(menu, win32con.MF_STRING, ID_VIEW_ALERTS,  t("tray.menu_view_alerts"))
         win32gui.AppendMenu(menu, win32con.MF_STRING, ID_VIEW_REPORT,  t("tray.menu_view_report"))
+        win32gui.AppendMenu(menu, win32con.MF_STRING, ID_CLEAR_LOGS,   t("tray.menu_clear_logs"))
         win32gui.AppendMenu(menu, win32con.MF_SEPARATOR, 0, "")
 
         pause_label = (t("tray.menu_resume") if self._monitor.is_paused
@@ -339,6 +342,22 @@ class SystemTray:
             self._monitor.resume()
         else:
             self._monitor.pause()
+
+    def _on_clear_logs(self):
+        MB_YESNO          = 0x04
+        MB_ICONWARNING    = 0x30
+        IDYES             = 6
+        result = ctypes.windll.user32.MessageBoxW(
+            0,
+            t("tray.clear_logs_confirm"),
+            t("tray.clear_logs_title"),
+            MB_YESNO | MB_ICONWARNING,
+        )
+        if result == IDYES:
+            try:
+                self._db.clear_all_data()
+            except Exception as e:
+                logger.error("clear_all_data selhalo: %s", e)
 
     def _on_quit(self, hwnd: int):
         self._refresh_running = False

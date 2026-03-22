@@ -115,6 +115,9 @@ STRINGS: dict[str, str] = {
     "tray.menu_status_alerts": "Network Watchdog — {count} alert(s)",
     "tray.menu_view_alerts":   "View Alerts",
     "tray.menu_view_report":   "View HTML Report",
+    "tray.menu_clear_logs":    "Clear Logs…",
+    "tray.clear_logs_title":   "Clear Logs",
+    "tray.clear_logs_confirm": "Delete all alerts, connections, and log files?\n\nThis action cannot be undone.",
     "tray.menu_pause":         "Pause Monitoring",
     "tray.menu_resume":        "Resume Monitoring",
     "tray.menu_quit":          "Quit",
@@ -170,6 +173,7 @@ STRINGS: dict[str, str] = {
     "ui.alerts.high_risk_suffix":  "  ⚠ HIGH-RISK COUNTRY",
     "ui.alerts.section_whatisit":  "WHAT DOES THIS MEAN?",
     "ui.alerts.copy_ip":           "📋 Copy IP",
+    "ui.alerts.btn_clear":         "🗑 Clear Logs",
 
     # ── main.py messages ──────────────────────────────────────────────────────
     "main.requesting_elevation":

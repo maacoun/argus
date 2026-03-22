@@ -113,6 +113,9 @@ STRINGS: dict[str, str] = {
     "tray.menu_status_alerts": "Network Watchdog — {count} výstrah",
     "tray.menu_view_alerts":   "Zobrazit výstrahy",
     "tray.menu_view_report":   "Zobrazit HTML report",
+    "tray.menu_clear_logs":    "Promazat logy…",
+    "tray.clear_logs_title":   "Promazat logy",
+    "tray.clear_logs_confirm": "Opravdu chcete smazat všechny výstrahy, spojení a logy?\n\nTato akce je nevratná.",
     "tray.menu_pause":         "Pozastavit monitoring",
     "tray.menu_resume":        "Pokračovat v monitorování",
     "tray.menu_quit":          "Ukončit",
@@ -168,6 +171,7 @@ STRINGS: dict[str, str] = {
     "ui.alerts.high_risk_suffix":  "  ⚠ RIZIKOVÁ ZEMĚ",
     "ui.alerts.section_whatisit":  "CO TO ZNAMENÁ?",
     "ui.alerts.copy_ip":           "📋 Kopírovat IP",
+    "ui.alerts.btn_clear":         "🗑 Promazat logy",
 
     # ── main.py messages ──────────────────────────────────────────────────────
     "main.requesting_elevation":

@@ -238,6 +238,24 @@ class Database:
 
     # ── Maintenance ───────────────────────────────────────────────────────────
 
+    def clear_all_data(self):
+        """Delete every alert, connection, and connection event.
+        Also truncates the text alerts log file."""
+        conn = self._conn()
+        conn.execute("DELETE FROM alerts")
+        conn.execute("DELETE FROM connections")
+        conn.execute("DELETE FROM connection_events")
+        conn.commit()           # commit BEFORE vacuum — VACUUM cannot run inside a transaction
+        try:
+            conn.execute("VACUUM")
+        except Exception:
+            pass                # VACUUM is optional (just reclaims disk space)
+        try:
+            open(config.ALERTS_LOG_PATH, "w").close()
+        except Exception:
+            pass
+        logger.info("All log data cleared by user")
+
     def cleanup_old_data(self, days: int = 7):
         """Delete data older than *days* to keep the DB small."""
         cutoff_iso = (datetime.now() - timedelta(days=days)).isoformat()
